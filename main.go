@@ -21,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	output, err := RenderASCII(opts.Text, fontLines)
+	output, err := RenderASCII(opts.Text, fontLines, opts.Color)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Render error:", err)
 		os.Exit(1)

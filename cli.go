@@ -11,6 +11,7 @@ type Options struct {
 	OutputFile string
 	Banner     string
 	Text       string
+	Color      bool
 }
 
 // PrintUsage displays usage instructions for the command-line tool.
@@ -20,6 +21,7 @@ func PrintUsage() {
 	fmt.Println("Options:")
 	fmt.Println("  --banner=<standard|shadow|thinkertoy>   Select the banner style (default: standard)")
 	fmt.Println("  --output=<file.txt>                    Save output to a file")
+	fmt.Println("  --color                                Enable colored output")
 	fmt.Println("  --help                                 Show this usage guide")
 	fmt.Println()
 	fmt.Println("Examples:")
@@ -27,6 +29,7 @@ func PrintUsage() {
 	fmt.Println("  ascii-art-forge --banner=shadow Hello")
 	fmt.Println("  ascii-art-forge --output=art.txt Hello standard")
 	fmt.Println("  ascii-art-forge --banner=thinkertoy \"Hello\\nWorld\"")
+	fmt.Println("  ascii-art-forge --color \"Hello World\"")
 }
 
 func ParseOptions(args []string) (Options, error) {
@@ -49,6 +52,11 @@ func ParseOptions(args []string) (Options, error) {
 
 		if strings.HasPrefix(arg, "--banner=") {
 			opts.Banner = strings.TrimPrefix(arg, "--banner=")
+			continue
+		}
+
+		if arg == "--color" {
+			opts.Color = true
 			continue
 		}
 

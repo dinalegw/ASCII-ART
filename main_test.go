@@ -46,7 +46,7 @@ func TestRenderAsciiWithStandardBanner(t *testing.T) {
 		t.Fatalf("failed to load banner: %v", err)
 	}
 
-	ascii, err := RenderASCII("Hi", fontLines)
+	ascii, err := RenderASCII("Hi", fontLines, false)
 	if err != nil {
 		t.Fatalf("render failed: %v", err)
 	}

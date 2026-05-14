@@ -1,5 +1,7 @@
 # AsciiArtForge
 
+[![CI](https://github.com/dinalegw/AsciiArtForge/actions/workflows/ci.yml/badge.svg)](https://github.com/dinalegw/AsciiArtForge/actions/workflows/ci.yml)
+
 AsciiArtForge is a polished, production-ready command-line tool for generating ASCII art from plain text.
 Built in Go with a clean CLI, banner-based typography, file output support, and a user-friendly experience, this project is designed to be the best ASCII art generator for developers, content creators, and terminal power users.
 
@@ -9,6 +11,7 @@ Built in Go with a clean CLI, banner-based typography, file output support, and 
 - Supports multiple banner styles: `standard`, `shadow`, and `thinkertoy`
 - Handles multi-line input via `\n`
 - Optionally writes output to a text file
+- Adds colorful output with random ANSI colors per character
 - Validates CLI input and provides helpful usage guidance
 - Includes automated tests for reliability
 
@@ -53,6 +56,12 @@ ascii-art-forge "Hello World"
 
 ```bash
 ascii-art-forge --banner=shadow "Hello World"
+```
+
+### Enable colored output
+
+```bash
+ascii-art-forge --color "Hello World"
 ```
 
 ### Save output to file
