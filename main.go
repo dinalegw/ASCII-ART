@@ -8,15 +8,6 @@ import (
 	"strings"
 )
 
-type Options struct {
-	Text        string
-	Banner      string
-	Color       string
-	Justify     string
-	OutputFile  string
-	Interactive bool
-}
-
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -34,6 +25,7 @@ func main() {
 	if banner == "" {
 		banner = "standard"
 	}
+
 	if !isValidBanner(banner) {
 		fmt.Fprintf(os.Stderr, "Error: Invalid banner %q\n", banner)
 		os.Exit(1)
@@ -45,17 +37,19 @@ func main() {
 	if color == "" {
 		color = "random"
 	}
-	if !isValidColor(color) && color != "random" {
+
+	if !isValidColor(color) {
 		fmt.Fprintf(os.Stderr, "Error: Invalid color %q\n", color)
 		os.Exit(1)
 	}
 
-	fmt.Print("Justify (left/center/right) [left]: ")
+	fmt.Print("Justify (left/center/right/justify) [left]: ")
 	justify, _ := reader.ReadString('\n')
 	justify = strings.ToLower(strings.TrimSpace(justify))
 	if justify == "" {
 		justify = "left"
 	}
+
 	if !isValidJustify(justify) {
 		fmt.Fprintf(os.Stderr, "Error: Invalid justify %q\n", justify)
 		os.Exit(1)
@@ -74,12 +68,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	outputPath := "output.txt"
-	if err := os.WriteFile(outputPath, []byte(output), 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Failed to write output: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("ASCII art saved to %s\n", outputPath)
+	fmt.Print(output)
 }
 
 func isValidBanner(banner string) bool {
@@ -93,7 +82,7 @@ func isValidBanner(banner string) bool {
 
 func isValidColor(color string) bool {
 	switch color {
-	case "red", "green", "yellow", "blue", "magenta", "cyan":
+	case "red", "green", "yellow", "blue", "magenta", "cyan", "random":
 		return true
 	default:
 		return false
@@ -102,7 +91,7 @@ func isValidColor(color string) bool {
 
 func isValidJustify(justify string) bool {
 	switch justify {
-	case "left", "center", "right":
+	case "left", "center", "right", "justify": // ✅ FIX HERE
 		return true
 	default:
 		return false

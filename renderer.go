@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -32,97 +34,17 @@ var randomColors = []string{
 
 const resetCode = "\x1b[0m"
 
+// ================= LOAD BANNER =================
+
 func LoadBanner(filename string) ([]string, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	lines := strings.Split(string(data), "\n")
-	return lines, nil
+	return strings.Split(string(data), "\n"), nil
 }
 
-func applyColor(asciiArt string, color string) string {
-	lines := strings.Split(asciiArt, "\n")
-	var result strings.Builder
-
-	for _, line := range lines {
-		for _, ch := range line {
-			if ch == ' ' {
-				result.WriteRune(ch)
-				continue
-			}
-
-			var code string
-			if color == "random" {
-				code = randomColors[rand.Intn(len(randomColors))]
-			} else {
-				code = colorMap[color]
-			}
-
-			result.WriteString(code)
-			result.WriteRune(ch)
-			result.WriteString(resetCode)
-		}
-		result.WriteString("\n")
-	}
-
-	return result.String()
-}
-
-func justifyASCII(asciiArt string, justify string) string {
-	lines := strings.Split(asciiArt, "\n")
-	if justify == "left" || len(lines) == 0 {
-		return asciiArt
-	}
-
-	maxWidth := 0
-	for _, line := range lines {
-		clean := stripAnsi(line)
-		if len(clean) > maxWidth {
-			maxWidth = len(clean)
-		}
-	}
-
-	var result strings.Builder
-	for i, line := range lines {
-		if i > 0 {
-			result.WriteString("\n")
-		}
-
-		clean := stripAnsi(line)
-		switch justify {
-		case "center":
-			pad := (maxWidth - len(clean)) / 2
-			result.WriteString(strings.Repeat(" ", pad) + line)
-		case "right":
-			pad := maxWidth - len(clean)
-			result.WriteString(strings.Repeat(" ", pad) + line)
-		default:
-			result.WriteString(line)
-		}
-	}
-
-	return result.String()
-}
-
-func stripAnsi(s string) string {
-	var result strings.Builder
-	inEscape := false
-	for _, r := range s {
-		if r == '\x1b' {
-			inEscape = true
-			continue
-		}
-		if inEscape {
-			if r == 'm' {
-				inEscape = false
-			}
-			continue
-		}
-		result.WriteRune(r)
-	}
-	return result.String()
-}
+// ================= RENDER ENGINE =================
 
 func RenderASCII(input string, bannerLines []string, color, justify string) (string, error) {
 	if len(bannerLines) == 0 {
@@ -130,34 +52,133 @@ func RenderASCII(input string, bannerLines []string, color, justify string) (str
 	}
 
 	text := strings.ReplaceAll(input, "\\n", "\n")
-	textLines := strings.Split(text, "\n")
+	blocks := strings.Split(text, "\n")
 
-	var output strings.Builder
+	var result strings.Builder
 
-	for lineIdx, line := range textLines {
-		if line == "" {
-			if lineIdx > 0 {
-				output.WriteString("\n")
-			}
+	for _, block := range blocks {
+		if strings.TrimSpace(block) == "" {
+			result.WriteString("\n")
 			continue
 		}
 
-		for row := 0; row < lineHeight; row++ {
-			for _, ch := range line {
-				if ch < 32 || ch > 126 {
-					continue
+		words := strings.Fields(block)
+
+		// build ASCII per word (8 rows each)
+		wordArt := make([][]string, len(words))
+
+		for wi, w := range words {
+			wordArt[wi] = make([]string, lineHeight)
+
+			for row := 0; row < lineHeight; row++ {
+				var sb strings.Builder
+
+				for _, ch := range w {
+					idx := (int(ch)-32)*charBlockSize + 1
+					sb.WriteString(bannerLines[idx+row])
 				}
 
-				idx := (int(ch)-32)*charBlockSize + 1
-				if idx+row >= len(bannerLines) {
-					return "", fmt.Errorf("banner file incomplete at character %q", ch)
-				}
-				output.WriteString(bannerLines[idx+row])
+				wordArt[wi][row] = sb.String()
 			}
-			output.WriteString("\n")
+		}
+
+		// compute ASCII WIDTH (IMPORTANT FIX)
+		width := getTerminalWidth()
+
+		asciiWordWidth := 0
+		for _, w := range wordArt {
+			asciiWordWidth += len(w[0])
+		}
+
+		gaps := len(words) - 1
+		extraSpace := 0
+		baseSpace := 1
+
+		if justify == "justify" && gaps > 0 {
+			spacesNeeded := width - asciiWordWidth
+
+			if spacesNeeded > 0 {
+				baseSpace = spacesNeeded / gaps
+				extraSpace = spacesNeeded % gaps
+			}
+		}
+
+		// render 8 rows
+		for row := 0; row < lineHeight; row++ {
+			var line strings.Builder
+
+			for i := 0; i < len(words); i++ {
+				line.WriteString(wordArt[i][row])
+
+				if i < gaps {
+					if justify == "justify" {
+						sp := baseSpace
+						if extraSpace > 0 {
+							sp++
+							extraSpace--
+						}
+						line.WriteString(strings.Repeat(" ", sp))
+					} else {
+						line.WriteString(" ")
+					}
+				}
+			}
+
+			result.WriteString(line.String() + "\n")
 		}
 	}
 
-	colored := applyColor(output.String(), color)
-	return justifyASCII(colored, justify), nil
+	return applyColor(result.String(), color), nil
+}
+
+// ================= COLOR =================
+
+func applyColor(asciiArt string, color string) string {
+	lines := strings.Split(asciiArt, "\n")
+	var result strings.Builder
+
+	for _, line := range lines {
+		if line == "" {
+			result.WriteString("\n")
+			continue
+		}
+
+		var code string
+		if color == "random" {
+			code = randomColors[rand.Intn(len(randomColors))]
+		} else {
+			code = colorMap[color]
+		}
+
+		result.WriteString(code)
+		result.WriteString(line)
+		result.WriteString(resetCode)
+		result.WriteString("\n")
+	}
+
+	return result.String()
+}
+
+// ================= TERMINAL WIDTH =================
+
+func getTerminalWidth() int {
+	cmd := exec.Command("stty", "size")
+	cmd.Stdin = os.Stdin
+
+	out, err := cmd.Output()
+	if err != nil {
+		return 80
+	}
+
+	parts := strings.Fields(string(out))
+	if len(parts) != 2 {
+		return 80
+	}
+
+	w, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 80
+	}
+
+	return w
 }
