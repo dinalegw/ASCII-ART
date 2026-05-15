@@ -2,110 +2,82 @@
 
 [![CI](https://github.com/dinalegw/AsciiArtForge/actions/workflows/ci.yml/badge.svg)](https://github.com/dinalegw/AsciiArtForge/actions/workflows/ci.yml)
 
-AsciiArtForge is a polished, production-ready command-line tool for generating ASCII art from plain text.
-Built in Go with a clean CLI, banner-based typography, file output support, and a user-friendly experience, this project is designed to be the best ASCII art generator for developers, content creators, and terminal power users.
+A professional command-line ASCII art generator built in Go. Transform text into colored ASCII art with customizable fonts and alignment.
 
-## 🚀 What it does
+## Features
 
-- Converts text into stylized ASCII art
-- Supports multiple banner styles: `standard`, `shadow`, and `thinkertoy`
-- Handles multi-line input via `\n`
-- Optionally writes output to a text file
-- Adds colorful output with random ANSI colors per character
-- Validates CLI input and provides helpful usage guidance
-- Includes automated tests for reliability
+- **Interactive Mode**: Run without arguments for guided input
+- **Multiple Fonts**: `standard`, `shadow`, `thinkertoy` banner styles
+- **Color Support**: red, green, yellow, blue, magenta, cyan, or random
+- **Text Alignment**: left, center, or right justification
+- **File Output**: Automatically saves to `output.txt`
 
-## 💡 Why this project
-
-AsciiArtForge is built to meet world-class CLI standards:
-
-- intuitive commands for fast usage
-- clean code and modular design
-- portable banner files for easy customization
-- professional README and licensing for GitHub-ready presentation
-
-## 📦 Installation
-
-Make sure you have Go installed (1.22+ recommended):
+## Installation
 
 ```bash
-go version
+go install github.com/dinalegw/AsciiArtForge@latest
 ```
 
-Then install or run directly:
+Or build from source:
 
 ```bash
-go run . "Hello World"
-```
-
-To build a standalone binary:
-
-```bash
+git clone https://github.com/dinalegw/AsciiArtForge
+cd AsciiArtForge
 go build -o ascii-art-forge .
 ```
 
-## ▶️ Usage
+## Usage
 
-### Basic text output
-
-```bash
-ascii-art-forge "Hello World"
-```
-
-### Choose a banner style
+### Interactive Mode (Recommended)
 
 ```bash
-ascii-art-forge --banner=shadow "Hello World"
+./ascii-art-forge
 ```
 
-### Enable colored output
+Prompts for:
+1. Text to convert
+2. Banner style (standard/shadow/thinkertoy)
+3. Color (red/green/yellow/blue/magenta/cyan/random)
+4. Text alignment (left/center/right)
+
+Output is saved to `output.txt`.
+
+### Example Output
+
+```
+ _____    ______   _______    _______              _   _  
+ / ___ \  |  _  \  | |     |  | ) ) )  |    /\     | \ | | 
+| |   | | | | | |  | |     |  |/ / /   |   /  \    |  \| | 
+| |   | | | |  _|  |  >    |      <    |  / /\ \   | . ` | 
+| |___| | | | |    | |     |  |\_  |   | |  __  |   | |\  | 
+ \_____/  |_| |    |_|_____|  |___| |  |__\_|_|_|__|_\_| 
+```
+
+## Project Structure
+
+```
+AsciiArtForge/
+├── main.go           # Entry point and CLI
+├── renderer.go       # ASCII rendering logic
+├── main_test.go      # Test suite
+├── fonts/
+│   ├── standard.txt
+│   ├── shadow.txt
+│   └── thinkertoy.txt
+├── LICENSE           # MIT License
+└── README.md
+```
+
+## Testing
 
 ```bash
-ascii-art-forge --color "Hello World"
+go test -v ./...
 ```
 
-### Save output to file
+## License
 
-```bash
-ascii-art-forge --output=art.txt "Hello World"
-```
+MIT License - see [LICENSE](LICENSE) for details.
 
-### Multi-line text
+## Contributing
 
-```bash
-ascii-art-forge "Hello\nWorld"
-```
-
-## 📁 Project structure
-
-```bash
-.
-├── LICENSE
-├── README.md
-├── go.mod
-├── main.go
-├── cli.go
-├── renderer.go
-├── main_test.go
-├── .gitignore
-└── fonts/
-    ├── standard.txt
-    ├── shadow.txt
-    └── thinkertoy.txt
-```
-
-## 🧪 Testing
-
-Run the full test suite with:
-
-```bash
-go test ./...
-```
-
-## 📝 License
-
-This project is released under the MIT License. See `LICENSE` for details.
-
-## 🙌 Contributions
-
-Contributions are welcome. Open issues for feature requests, bug reports, or improvements.
+Contributions welcome! Open an issue or submit a pull request.

@@ -12,79 +12,99 @@ const (
 	charBlockSize = 9
 )
 
-// LoadBanner reads a font file and returns its lines.
+var colorMap = map[string]string{
+	"red":     "\x1b[31m",
+	"green":   "\x1b[32m",
+	"yellow":  "\x1b[33m",
+	"blue":    "\x1b[34m",
+	"magenta": "\x1b[35m",
+	"cyan":    "\x1b[36m",
+}
+
+var randomColors = []string{
+	"\x1b[31m",
+	"\x1b[32m",
+	"\x1b[33m",
+	"\x1b[34m",
+	"\x1b[35m",
+	"\x1b[36m",
+}
+
+const resetCode = "\x1b[0m"
+
 func LoadBanner(filename string) ([]string, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-
 	lines := strings.Split(string(data), "\n")
 	return lines, nil
 }
 
-// colorCodes is a list of ANSI color codes for coloring ASCII art.
-var colorCodes = []string{
-	"\033[31m", // Red
-	"\033[32m", // Green
-	"\033[33m", // Yellow
-	"\033[34m", // Blue
-	"\033[35m", // Magenta
-	"\033[36m", // Cyan
-}
-
-// resetColor resets the color back to default.
-const resetColor = "\033[0m"
-
-// applyColor applies color to each character in the ASCII art.
-// If color is "random", each character gets a random color.
-// Otherwise, uses the specified color.
 func applyColor(asciiArt string, color string) string {
 	lines := strings.Split(asciiArt, "\n")
-	var coloredLines []string
+	var result strings.Builder
 
 	for _, line := range lines {
-		var coloredLine strings.Builder
-		for _, char := range line {
-			if char == ' ' {
-				coloredLine.WriteRune(char)
+		for _, ch := range line {
+			if ch == ' ' {
+				result.WriteRune(ch)
 				continue
 			}
 
-			var colorCode string
+			var code string
 			if color == "random" {
-				colorCode = colorCodes[rand.Intn(len(colorCodes))]
-			} else if c, ok := colorNames[color]; ok {
-				colorCode = c
+				code = randomColors[rand.Intn(len(randomColors))]
 			} else {
-				colorCode = colorCodes[rand.Intn(len(colorCodes))]
+				code = colorMap[color]
 			}
 
-			coloredLine.WriteString(colorCode)
-			coloredLine.WriteRune(char)
-			coloredLine.WriteString(resetColor)
+			result.WriteString(code)
+			result.WriteRune(ch)
+			result.WriteString(resetCode)
 		}
-		coloredLines = append(coloredLines, coloredLine.String())
+		result.WriteString("\n")
 	}
 
-	return strings.Join(coloredLines, "\n")
+	return result.String()
 }
 
-// getMaxWidth returns the maximum line width in the ASCII art.
-func getMaxWidth(asciiArt string) int {
+func justifyASCII(asciiArt string, justify string) string {
 	lines := strings.Split(asciiArt, "\n")
+	if justify == "left" || len(lines) == 0 {
+		return asciiArt
+	}
+
 	maxWidth := 0
 	for _, line := range lines {
-		// Count non-color characters
-		cleanLine := stripAnsi(line)
-		if len(cleanLine) > maxWidth {
-			maxWidth = len(cleanLine)
+		clean := stripAnsi(line)
+		if len(clean) > maxWidth {
+			maxWidth = len(clean)
 		}
 	}
-	return maxWidth
+
+	var result strings.Builder
+	for i, line := range lines {
+		if i > 0 {
+			result.WriteString("\n")
+		}
+
+		clean := stripAnsi(line)
+		switch justify {
+		case "center":
+			pad := (maxWidth - len(clean)) / 2
+			result.WriteString(strings.Repeat(" ", pad) + line)
+		case "right":
+			pad := maxWidth - len(clean)
+			result.WriteString(strings.Repeat(" ", pad) + line)
+		default:
+			result.WriteString(line)
+		}
+	}
+
+	return result.String()
 }
 
-// stripAnsi removes ANSI escape codes from a string.
 func stripAnsi(s string) string {
 	var result strings.Builder
 	inEscape := false
@@ -104,80 +124,40 @@ func stripAnsi(s string) string {
 	return result.String()
 }
 
-// justifyLine applies alignment to a single line.
-func justifyLine(line, justify string, width int) string {
-	cleanLine := stripAnsi(line)
-	if justify == "right" {
-		return strings.Repeat(" ", width-len(cleanLine)) + line
-	} else if justify == "center" {
-		padding := (width - len(cleanLine)) / 2
-		return strings.Repeat(" ", padding) + line
-	}
-	return line
-}
-
-// justifyASCII applies alignment to the entire ASCII art.
-func justifyASCII(asciiArt string, justify string) string {
-	lines := strings.Split(asciiArt, "\n")
-	if justify == "left" {
-		return asciiArt
-	}
-
-	maxWidth := getMaxWidth(asciiArt)
-	var result strings.Builder
-	for i, line := range lines {
-		if i > 0 {
-			result.WriteString("\n")
-		}
-		result.WriteString(justifyLine(line, justify, maxWidth))
-	}
-	return result.String()
-}
-
-// RenderASCII converts input text into ASCII art using the provided banner.
 func RenderASCII(input string, bannerLines []string, color, justify string) (string, error) {
 	if len(bannerLines) == 0 {
 		return "", fmt.Errorf("empty banner file")
 	}
 
 	text := strings.ReplaceAll(input, "\\n", "\n")
-	lines := strings.Split(text, "\n")
-
-	if len(lines) == 0 {
-		return "", nil
-	}
+	textLines := strings.Split(text, "\n")
 
 	var output strings.Builder
-	prevLineWasEmpty := false
 
-	for lineIndex, line := range lines {
+	for lineIdx, line := range textLines {
 		if line == "" {
-			if prevLineWasEmpty && lineIndex > 0 {
+			if lineIdx > 0 {
 				output.WriteString("\n")
 			}
-			prevLineWasEmpty = true
 			continue
 		}
 
-		prevLineWasEmpty = false
-
 		for row := 0; row < lineHeight; row++ {
-			for _, char := range line {
-				if char < 32 || char > 126 {
+			for _, ch := range line {
+				if ch < 32 || ch > 126 {
 					continue
 				}
 
-				index := (int(char)-32)*charBlockSize + 1
-				if index+row >= len(bannerLines) {
-					return "", fmt.Errorf("banner file is malformed or incomplete: character %q at position %d", char, index+row)
+				idx := (int(ch)-32)*charBlockSize + 1
+				if idx+row >= len(bannerLines) {
+					return "", fmt.Errorf("banner file incomplete at character %q", ch)
 				}
-
-				output.WriteString(bannerLines[index+row])
+				output.WriteString(bannerLines[idx+row])
 			}
 			output.WriteString("\n")
 		}
 	}
 
-	result := applyColor(output.String(), color)
-	return justifyASCII(result, justify), nil
+	colored := applyColor(output.String(), color)
+	return justifyASCII(colored, justify), nil
 }
